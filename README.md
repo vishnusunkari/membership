@@ -1,6 +1,6 @@
 # README #
 
-As part of Microservice Architecture using AWS ECS, ECS Service Discovery, Docker Containerization, This is about:
+As part of Microservice Architecture using AWS ECS, ECS Service Discovery, AWS X-Ray for Service Tracing and Monitoring, Docker Containerization, This is about:
 **membership microservice**
 
 ### What is this repository for? ###
