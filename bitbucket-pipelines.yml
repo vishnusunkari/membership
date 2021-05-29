@@ -1,0 +1,50 @@
+image:
+  name: gradle:6.8.3-jdk11
+
+pipelines:
+  branches:
+    master:
+      - step:
+          script:
+            - echo "only on master"
+
+      - step:
+          name: Build and publish docker image.
+          caches:
+            - gradle
+          services:
+            - docker # Enable Docker for your repository
+          script:
+            # Build Gradle Project
+            - bash ./gradlew clean build -Pspring.profiles.active=${ENVIRONMENT_BUILD}
+          artifacts:
+            - build/libs/*.jar
+      - step:
+          name: Build, Push Docker Image and Deploy to ECS
+          image: atlassian/pipelines-awscli
+          script:
+            # Replace the docker image name in the task definition with the newly pushed image.
+            - export IMAGE_NAME="xxx.dkr.ecr.us-east-1.amazonaws.com/nic2-membership:${BITBUCKET_BUILD_NUMBER}"
+            - export IMAGE_NAME_LATEST="xxx.dkr.ecr.us-east-1.amazonaws.com/nic2-membership:latest"
+            # aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 707745566478.dkr.ecr.us-east-1.amazonaws.com
+            - eval $(aws ecr get-login --region us-east-1 --no-include-email)
+            # Build the docker image and push to Dockerhub.
+            - docker build -t $IMAGE_NAME .
+            - docker build -t $IMAGE_NAME_LATEST .
+            #- docker login --username "$DOCKERHUB_USERNAME" --password "$DOCKERHUB_PASSWORD"
+            - docker push $IMAGE_NAME
+            - docker push $IMAGE_NAME_LATEST
+
+            # Update the task definition
+            - pipe: atlassian/aws-ecs-deploy:1.5.0
+              variables:
+                AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
+                AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+                AWS_DEFAULT_REGION: $AWS_DEFAULT_REGION
+                CLUSTER_NAME: 'nic-ecs-cluster'
+                SERVICE_NAME: 'membership'
+                FORCE_NEW_DEPLOYMENT: 'true'
+            # Update the ecs service
+            - aws ecs update-service --service membership --cluster nic-ecs-cluster --force-new-deployment
+
+

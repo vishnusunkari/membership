@@ -1,0 +1,62 @@
+plugins {
+    id 'org.springframework.boot' version '2.3.11.BUILD-SNAPSHOT'
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+    id "com.palantir.docker" version "0.26.0"
+    id "com.palantir.docker-run" version "0.26.0"
+    id 'java'
+    id 'application'
+}
+
+group = 'com.nic'
+version = '1'
+sourceCompatibility = '11'
+
+repositories {
+    mavenCentral()
+    maven { url 'https://repo.spring.io/milestone' }
+    maven { url 'https://repo.spring.io/snapshot' }
+}
+
+String imageName = "vishnusunkari/membership:$version"
+docker {
+    name imageName
+    files "build/libs/${bootJar.archiveFileName.get()}"
+    buildArgs([JAR_FILE: bootJar.archiveFileName.get()])
+    noCache true
+}
+
+dockerRun {
+    name "${project.name}"
+    image imageName
+    ports '8000:8000'
+    clean true
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation group: 'com.amazonaws', name: 'aws-java-sdk-servicediscovery', version: '1.11.1012'
+    implementation group: 'dnsjava', name: 'dnsjava', version: '3.3.1'
+    implementation group: 'com.amazonaws', name: 'aws-xray-recorder-sdk-spring', version: '2.9.0'
+    implementation group: 'com.amazonaws', name: 'aws-xray-recorder-sdk-apache-http', version: '2.9.0'
+    implementation group: 'io.springfox', name: 'springfox-swagger2', version: '2.9.2'
+    implementation group: 'io.springfox', name: 'springfox-swagger-ui', version: '2.9.2'
+    /*
+    implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+    implementation 'org.apache.kafka:kafka-streams'
+    implementation 'org.springframework.kafka:spring-kafka'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
+    */
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation('org.springframework.boot:spring-boot-starter-test') {
+        exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+    }
+    testImplementation 'org.springframework.kafka:spring-kafka-test'
+
+}
+
